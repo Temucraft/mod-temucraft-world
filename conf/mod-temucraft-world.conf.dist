@@ -1,0 +1,23 @@
+[worldserver]
+
+########################################
+# mod-temucraft-world
+########################################
+#
+#    Temucraft.World.BusyRespawn
+#        Description: When an open-world creature dies, each extra player within Radius yards makes it respawn
+#                     PerPlayer % faster (never below Minimum seconds). Quest givers, rares and world bosses are left
+#                     alone. The core's zone-wide Respawn.DynamicRateCreature still works on top if you set it.
+#        Default:     1, 50, 25, 30
+
+Temucraft.World.BusyRespawn = 1
+Temucraft.World.BusyRespawn.Radius = 50
+Temucraft.World.BusyRespawn.PerPlayer = 25
+Temucraft.World.BusyRespawn.Minimum = 30
+
+#
+#    Temucraft.World.DungeonCorpseSeconds
+#        Description: Corpses in dungeons and raids stay at least this long (0 = as Corpse.Decay.* says).
+#        Default:     1800
+
+Temucraft.World.DungeonCorpseSeconds = 1800
