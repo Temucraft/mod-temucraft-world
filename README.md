@@ -60,3 +60,5 @@ their own ids; their terrain is already in the client's patch-Z.MPQ, and the sam
 
 The server needs their .map / vmap / mmap files: `extract_new_maps.bat` now lists 1210, 1211 and 1246. Crazy's own
 spawns on them (mostly 1,410 copies of one custom creature on the Shado-Pan map) are not brought over.
+
+Part of the Temucraft modules for AzerothCore 3.3.5a.
