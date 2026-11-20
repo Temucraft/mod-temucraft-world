@@ -17,6 +17,10 @@ World data for the maps salvaged from the Crazy repack and WoW Forever client fi
   Eternity heroic, Temple of the Jade Serpent, Siege of Orgrimmar, the scenarios). Made by `tools/mapfix.py`.
 - `temucraft_world_msv.sql`: only removes the Mogu'shan Vaults spawns an earlier version added (GUIDs 72xxxxx).
 - `temucraft_world_items.sql`: the items those instances drop.
+- `temucraft_world_mists_displays.sql`: 5 model ids and 3 object displays the Mists rows use that the DBCs don't have
+  (31379, 31460, 60569, 60570, 61807 / 9542, 9371, 26705) get the closest 3.3.5 look: the invisible trigger model for
+  the script stalkers, a crypt scarab for The Golden Beetle, the Thunder Bluff elevator car for the Orgrimmar
+  elevators, a blacksmith forge and the Coldarra camouflage bubble. `tools/convert.py` makes the same swap.
 
 How the content was fitted to 3.3.5:
 - Spawns use GUIDs 7000000-7299999; creature immunities 70000-72999; waypoint paths from 70000000.
@@ -28,6 +32,9 @@ How the content was fitted to 3.3.5:
 - Gossip menus are not converted yet, and most boss fights need their C++ scripts (see the boss modules).
 
 `tools/convert.py` and `tools/items.py` rebuild these files from the source databases.
+`tools/heroic_convert.py` makes the SQL of [mod-temucraft-deadmines](https://github.com/Temucraft/mod-temucraft-deadmines)
+and [mod-temucraft-shadowfang-keep](https://github.com/Temucraft/mod-temucraft-shadowfang-keep) (the Cataclysm
+versions of those dungeons as their heroic modes, GUIDs 7300000-7399999).
 
 The SQL runs through the normal database updater on the next worldserver start.
 

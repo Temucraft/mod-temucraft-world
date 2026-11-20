@@ -72,6 +72,11 @@ def scale(t, hpmod, dmgmod, flatdmg=None):
         ds = src.get(f'damage_exp{ex}') if ex else src.get('damage_base')
         newdmg = dmgmod * (ds or da) / (da * POWER)
     return round(max(newhp, 0.01), 4), round(min(max(newdmg, 0.1), 80), 4)
+# model and object display ids that Temucraft's CreatureDisplayInfo.dbc / GameObjectDisplayInfo.dbc (patch-T) don't
+# have: the closest 3.3.5 look (temucraft_world_mists_displays.sql does the same for the converted rows)
+MODEL_FIX = {31379: 11686, 60569: 11686, 60570: 11686, 61807: 11686,   # invisible stalkers -> the invisible trigger model
+             31460: 10005}                                            # The Golden Beetle -> crypt scarab
+GO_DISPLAY_FIX = {9542: 360, 9371: 355, 26705: 8613}                  # Orgrimmar elevators, goblin forge, bubble
 MOP_DIFF = {1: 0, 2: 1, 3: 0, 4: 1, 5: 2, 6: 3}   # Mists difficulty id -> 3.3.5 difficulty
 def spawnmask(m):
     m = m or 1
@@ -177,7 +182,7 @@ for e in sorted(new_ct):
     ct_rows.append(r)
     for i in range(4):
         m = t[f'modelid{i + 1}']
-        if m: model_rows.append(dict(CreatureID=e, Idx=i, CreatureDisplayID=m, DisplayScale=t['scale'] or 1, Probability=1, VerifiedBuild=0))
+        if m: model_rows.append(dict(CreatureID=e, Idx=i, CreatureDisplayID=MODEL_FIX.get(m, m), DisplayScale=t['scale'] or 1, Probability=1, VerifiedBuild=0))
     for s in range(1, 7):
         if t[f'resistance{s}']: res_rows.append(dict(CreatureID=e, School=s, Resistance=t[f'resistance{s}'], VerifiedBuild=0))
     for s in range(8):
@@ -271,6 +276,7 @@ for e in sorted(new_gt):
     t = gtpl[e]; r = {('Data' + k[4:]) if k.lower().startswith('data') else k: v for k, v in t.items()}
     r.update(ScriptName=t['ScriptName'] if t.get('ScriptName') in PORTED else '', VerifiedBuild=0, AIName=t.get('AIName') or '', IconName=t['IconName'] or '', castBarCaption=t['castBarCaption'] or '',
              unk1=t['unk1'] or '')
+    r['displayId'] = GO_DISPLAY_FIX.get(r['displayId'], r['displayId'])
     gt_rows.append(r)
     if MOP and (t['faction'] or t['flags']): gta_rows.append(dict(entry=e, faction=t['faction'], flags=t['flags'], mingold=0, maxgold=0, artkit0=0, artkit1=0, artkit2=0, artkit3=0))
 if SRC == '434':
