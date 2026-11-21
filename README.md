@@ -56,6 +56,14 @@ The SQL runs through the normal database updater on the next worldserver start.
   and Forever's version of the continent tiles Open Azeroth left unchanged.
 - Server `Data/dbc`: same rows (backup in `Data/dbc.backup-before-forever-crazy`).
 
+## Forever maps: .tele points
+
+`temucraft_world_forever_tele.sql` (made by `tools/forever_tele.py`) adds a `.tele` point on each of the 27 new
+Forever maps that have terrain, named `F<map id><name>`, for example `.tele F2784DemonFallCanyon`. The Forever data
+has no spawns, entrances or start points, so each point is the ground near the middle of the map. Some can land
+outside the playable part or under a roof (3065 and 3104 came out at height 0): move them in game if needed. The
+server needs the map files of each map first (`extract_new_maps.bat`).
+
 ## Weather
 
 `temucraft_world_weather.sql` gives 117 zones that had no weather a low chance of it (1-5% per season): rain in green
