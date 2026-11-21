@@ -16,7 +16,8 @@ World data for the maps salvaged from the Crazy repack and WoW Forever client fi
   scenario maps as dungeons, and difficulty rows for the instance maps that had none (Firelands Terrain 2, Well of
   Eternity heroic, Temple of the Jade Serpent, Siege of Orgrimmar, the scenarios). Made by `tools/mapfix.py`.
 - `temucraft_world_msv.sql`: only removes the Mogu'shan Vaults spawns an earlier version added (GUIDs 72xxxxx).
-- `temucraft_world_items.sql`: the items those instances drop.
+- `temucraft_world_items.sql`: the items those instances drop (also the Deadmines and Shadowfang Keep heroic boss loot),
+  with their `item_dbc` rows so the server knows the items the 3.3.5 Item.dbc doesn't have.
 - `temucraft_world_mists_displays.sql`: 5 model ids and 3 object displays the Mists rows use that the DBCs don't have
   (31379, 31460, 60569, 60570, 61807 / 9542, 9371, 26705) get the closest 3.3.5 look: the invisible trigger model for
   the script stalkers, a crypt scarab for The Golden Beetle, the Thunder Bluff elevator car for the Orgrimmar
@@ -28,11 +29,13 @@ How the content was fitted to 3.3.5:
   group meets about the same difficulty a level-85 (or 90) group did.
 - Items: item levels moved to the 3.3.5 range (Cataclysm 346 -> 229, 378 -> 255, 391 -> 265; Mists 463 -> 232,
   553 -> 274, 566 -> 280), stats scaled to match, Mastery turned into Defense on tank items and Crit otherwise;
-  armor and weapon damage recalculated for the new item level. Item.dbc rows were added on the server and client.
+  armor and weapon damage recalculated for the new item level. The Item.dbc rows are in `item_dbc` for the server
+  and in patch-T's Item.dbc for the client.
 - Gossip menus are not converted yet, and most boss fights need their C++ scripts (see the boss modules).
 
 `tools/convert.py` and `tools/items.py` rebuild these files from the source databases.
-`tools/heroic_convert.py` makes the SQL of the Deadmines and Shadowfang Keep heroics in
+`tools/heroic_convert.py` (with `tools/heroic_vehicles.json`, the Cataclysm vehicle rows from the 4.3.4 Vehicle.dbc
+and VehicleSeat.dbc) makes the SQL of the Deadmines and Shadowfang Keep heroics in
 [mod-temucraft-instances](https://github.com/Temucraft/mod-temucraft-instances) (the Cataclysm
 versions of those dungeons as their heroic modes, GUIDs 7300000-7399999).
 

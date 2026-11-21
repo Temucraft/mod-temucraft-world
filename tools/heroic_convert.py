@@ -31,6 +31,39 @@ DISPLAY_FIX = {30184: 37710, 30185: 38641, 30186: 38642, 30187: 38811,     # min
                32183: 36223,                                               # mystery meat -> the steak's meat
                30054: 34172, 30056: 34173, 30057: 34174,                   # Forsaken Blightspreader -> Veteran Forsaken Trooper
                30210: 8181, 30211: 8181, 30212: 8181, 30213: 8181}         # Rabid Mastiff -> Bloodhound Mastiff
+# Cataclysm spells that Temucraft's Spell.dbc doesn't have. Most are the heroic copies of a normal-mode spell (from the
+# 4.3.4 SpellDifficulty.dbc): they become that normal spell, which does the same job and is in Spell.dbc. The core
+# also falls back to the normal spell itself when a heroic copy is missing, so the C++ needs no change for them.
+SPELL_MAP = {90906: 90905, 90912: 90398, 90918: 90913, 90921: 90920, 90930: 90929, 90931: 90928, 90933: 90932,
+             90939: 90938, 90947: 90946, 90955: 90954, 90959: 90958, 90979: 90978, 90981: 90980, 90995: 90994,
+             91005: 91004, 91006: 90047, 91010: 91009, 91016: 90098, 91033: 91032, 91035: 91034, 91037: 91036,
+             91039: 91038, 91043: 89652, 91046: 91045, 91051: 91050, 91054: 91053, 91057: 89663, 91063: 89769,
+             91065: 89757, 91066: 89697, 91286: 88129, 91568: 88300, 91718: 88521, 91734: 91723, 91735: 91726,
+             91736: 91727, 91859: 88839, 91863: 88836, 92066: 89732, 92748: 92747, 92834: 89267, 92842: 90680,
+             91678: 91677, 93704: 93697, 93710: 93423, 93712: 93581, 93735: 93686, 93761: 93629,
+             59632: 35179}      # Shrink (not in 4.3.4 either) -> the 3.3.5 Shrink aura (10% smaller, no end)
+# no 3.3.5 spell does the same job: left out of the SQL (dummy auras, achievement credit, the stun cannonball of the
+# Defias Cannon, Vanessa's heroic buff); the C++ handles the cannon kill and Springvale's shield itself
+SPELL_NONE = {95408, 95494, 95503, 95527, 95542, 95650, 95654, 93716, 95929, 95930}
+# the Goblin Teleporter's teleport spells: a SmartAI teleport to the spell's target position instead
+TELEPORT_SPELLS = {95770, 95771, 95772}
+def mapspell(sp): return SPELL_MAP.get(sp, sp)
+def mapauras(a):
+    if not a: return a or ''
+    return ' '.join(str(mapspell(int(x))) for x in a.split() if int(x) not in SPELL_NONE | TELEPORT_SPELLS)
+# area triggers that the 3.3.5 AreaTrigger.dbc doesn't have (boxes, from the 4.3.4 AreaTrigger.dbc). The server reads
+# them from the `areatrigger` table; the client gets the same rows in patch-T's AreaTrigger.dbc.
+AREATRIGGERS = {'sfk': [(6422, 33, -294.493, 2305.47, 90.6103, 0, 9.513, 11.23, 2.933, 5.901),
+                        (6424, 33, -254.116, 2159.01, 94.2769, 0, 14.09, 21.23, 5.04, 5.971),
+                        (6425, 33, -234.191, 2211.57, 97.3452, 0, 9.349, 4.914, 4.85, 6.081),
+                        (6431, 33, -126.885, 2165.81, 155.678, 0, 6.262, 11.64, 14.06, 5.898)]}.get(KEY, [])
+# Cataclysm vehicle ids that the 3.3.5 Vehicle.dbc doesn't have. The one-seat ones get a stock vehicle with the same
+# seat slot and (nearly) the same seat flags; the ones with many seats, where the seat positions are the fight (Glubtok's
+# fire walls, Vanessa's lightning and trap rings, the Lumbering Oaf, the mine carts), keep their own id: their rows
+# (tools/heroic_vehicles.json, from the 4.3.4 Vehicle.dbc and VehicleSeat.dbc) go to the server's vehicle_dbc and
+# vehicleseat_dbc, and to patch-T's Vehicle.dbc and VehicleSeat.dbc on the client.
+VEHICLE_MAP = {1389: 227, 1283: 586, 1311: 294, 1390: 554, 1403: 586, 1399: 477, 1422: 586}
+VEH = json.load(open(os.path.join(HERE, 'heroic_vehicles.json')))
 MAP, GUID0, LVL, POWER = CFG['map'], CFG['guid'], 5, 3.5
 MODSQL = CFG['mod'].replace('-', '_')
 con = pymysql.connect(unix_socket='/home/claude/mdb/s.sock', user='root', db='tdb434', charset='utf8mb4',
@@ -120,6 +153,7 @@ while True:
     for s in ss_all:
         if s['source_type'] == 0 and s['entryorguid'] in want and s['action_type'] == 12 and s['action_param1']:
             more.add(s['action_param1'])
+    more |= ids(f"select accessory_entry from vehicle_template_accessory where entry in ({inlist(want)})")
     if more <= want: break
     want |= more
 # AzerothCore templates the heroic spawns share with the classic dungeon: they get the Cataclysm heroic template as
@@ -150,7 +184,7 @@ for e in sorted(new_ct):
              detection_range=20, CreatureImmunitiesId=immunity(t['mechanic_immune_mask'], t['spell_school_immune_mask']),
              ScriptName=t['ScriptName'] if t['ScriptName'] in PORTED and e not in heroic_tpl else '', VerifiedBuild=0,
              subname=t['subname'] or '', IconName=t['IconName'] or '', gossip_menu_id=0, AIName=t['AIName'] or '',
-             difficulty_entry_2=0, difficulty_entry_3=0)
+             difficulty_entry_2=0, difficulty_entry_3=0, VehicleId=VEHICLE_MAP.get(t['VehicleId'], t['VehicleId']))
     if e in heroic_tpl: r.update(difficulty_entry_1=0, AIName='')   # the base template's AI is the one used
     # the base template is only the heroic one's entry point: same expansion, so the core doesn't complain
     if t['difficulty_entry_1'] in tpl: r.update(exp=min(tpl[t['difficulty_entry_1']]['exp'], 2))
@@ -161,7 +195,8 @@ for e in sorted(new_ct):
     for s in range(1, 7):
         if t[f'resistance{s}']: res_rows.append(dict(CreatureID=e, School=s, Resistance=t[f'resistance{s}'], VerifiedBuild=0))
     for s in range(8):
-        if t[f'spell{s + 1}']: spell_rows.append(dict(CreatureID=e, Index=s, Spell=t[f'spell{s + 1}'], VerifiedBuild=0))
+        sp = t[f'spell{s + 1}']
+        if sp and sp not in SPELL_NONE | TELEPORT_SPELLS: spell_rows.append(dict(CreatureID=e, Index=s, Spell=mapspell(sp), VerifiedBuild=0))
 
 out.write(f"-- {CFG['mod']}: {CFG['name']} heroic (Cataclysm version), map {MAP}\n"
           f"-- Converted from the TrinityCore 4.3.4 (TDB 434.22011) world database: creatures and objects of the heroic mode,\n"
@@ -191,7 +226,7 @@ def newpath(old, owner):
     if old not in paths: paths[old] = (owner * 10 + len([p for p in paths.values() if p // 10 == owner])) if owner else (GUID0 * 10 + 499990 + len(paths))
     return paths[old]
 tad = q(f"select * from creature_template_addon where entry in ({inlist(new_ct)})")
-emit('creature_template_addon', AC('creature_template_addon'), [dict(r, path_id=newpath(r['waypointPathId'], 0), visibilityDistanceType=0, auras=r['auras'] or '') for r in tad])
+emit('creature_template_addon', AC('creature_template_addon'), [dict(r, path_id=newpath(r['waypointPathId'], 0), visibilityDistanceType=0, auras=mapauras(r['auras'])) for r in tad])
 eq = q(f"select * from creature_equip_template where CreatureID in ({inlist(new_ct)})")
 emit('creature_equip_template', AC('creature_equip_template'), [dict(r, VerifiedBuild=0) for r in eq])
 
@@ -215,7 +250,7 @@ for r in cre:
 emit('creature', AC('creature'), c_rows, 'creature spawns (heroic only)')
 cad = q(f"select * from creature_addon where guid in ({inlist(guidmap)})")
 emit('creature_addon', AC('creature_addon'), [dict(r, guid=guidmap[r['guid']], path_id=newpath(r['waypointPathId'], guidmap[r['guid']]),
-                                                     visibilityDistanceType=0, auras=r['auras'] or '') for r in cad])
+                                                     visibilityDistanceType=0, auras=mapauras(r['auras'])) for r in cad])
 wp_rows = []
 for old, new in paths.items():
     for w in q("select * from waypoint_data where id=%s order by point", old):
@@ -305,7 +340,18 @@ ss_rows = []
 for s in ss:
     k = s['entryorguid']
     if k < 0: k = -(guidmap if s['source_type'] == 0 else gguidmap)[-k]
-    ss_rows.append(dict(s, entryorguid=k, event_param5=s.get('event_param5', 0) or 0, event_param6=0, target_param4=0, comment=s['comment'] or ''))
+    r = dict(s, entryorguid=k, event_param5=s.get('event_param5', 0) or 0, event_param6=0, target_param4=0, comment=s['comment'] or '')
+    if r['action_type'] in (11, 75, 85, 86):
+        sp = r['action_param1']
+        if sp in TELEPORT_SPELLS:
+            # teleport the invoker to the spell's target position (SMART_ACTION_TELEPORT)
+            tp = q("select * from spell_target_position where ID=%s", sp)[0]
+            r.update(action_type=62, action_param1=tp['MapID'], action_param2=0, action_param3=0, action_param4=0, action_param5=0,
+                     action_param6=0, target_x=tp['PositionX'], target_y=tp['PositionY'], target_z=tp['PositionZ'], target_o=tp['Orientation'],
+                     comment=r['comment'] + ' (Temucraft: teleport instead of the spell)')
+        elif sp in SPELL_NONE: continue
+        else: r['action_param1'] = mapspell(sp)
+    ss_rows.append(r)
 for st, keys in ((0, new_ct | {-v for v in guidmap.values()}), (1, new_gt | {-v for v in gguidmap.values()}), (9, lists)):
     if keys: delete_in('smart_scripts', 'entryorguid', keys, f'`source_type`={st} AND ')
 emit('smart_scripts', AC('smart_scripts'), ss_rows, 'SmartAI')
@@ -316,7 +362,7 @@ emit('creature_text', AC('creature_text'), txt, 'creature texts')
 
 # ------------------------------------------------------------------ conditions: loot, SmartAI, and the spell targets of the Cataclysm spells
 cond = q("select * from conditions")
-spells_used = CPP_SPELL | {r['Spell'] for r in spell_rows} | {s['action_param1'] for s in ss_rows if s['action_type'] in (11, 75, 85, 86)}
+spells_used = {mapspell(x) for x in CPP_SPELL if x not in SPELL_NONE | TELEPORT_SPELLS} | {r['Spell'] for r in spell_rows} | {s['action_param1'] for s in ss_rows if s['action_type'] in (11, 75, 85, 86)}
 cr = [c for c in cond if (c['SourceTypeOrReferenceId'] == 1 and c['SourceGroup'] in lootids) or
       (c['SourceTypeOrReferenceId'] == 22 and abs(c['SourceEntry']) in new_ct | set(guidmap)) or
       (c['SourceTypeOrReferenceId'] in (13, 17) and c['SourceEntry'] in spells_used and c['SourceEntry'] > 80864)]
@@ -342,6 +388,49 @@ if sgids:
     emit('spawn_group_template', AC('spawn_group_template'), [dict(r, groupId=SGMAP[r['groupId']]) for r in q(f"select * from spawn_group_template where groupId in ({inlist(sgids)})")], 'spawn groups')
     emit('spawn_group', AC('spawn_group'), [dict(groupId=SGMAP[r['groupId']], spawnType=r['spawnType'],
          spawnId=(guidmap if r['spawnType'] == 0 else gguidmap)[r['spawnId']]) for r in sg])
+# ------------------------------------------------------------------ vehicles: accessories, spell clicks, and the vehicle rows
+acc = q(f"select * from vehicle_template_accessory where entry in ({inlist(new_ct)})")
+if acc:
+    delete_in('vehicle_template_accessory', 'entry', {r['entry'] for r in acc})
+    emit('vehicle_template_accessory', AC('vehicle_template_accessory'), acc, 'vehicle passengers')
+clk = q(f"select * from npc_spellclick_spells where npc_entry in ({inlist(new_ct)})")
+if clk:
+    delete_in('npc_spellclick_spells', 'npc_entry', {r['npc_entry'] for r in clk})
+    emit('npc_spellclick_spells', AC('npc_spellclick_spells'), clk, 'spell clicks (riding the vehicles)')
+vused = {r['VehicleId'] for r in ct_rows if r['VehicleId']}
+vrows = [v for v in VEH['vehicle'] if v[0] in vused]
+if vrows:
+    import struct
+    def typed(row, kinds):
+        return [struct.unpack('<f', struct.pack('<I', v))[0] if k == 'f' else '' if k == 's' else struct.unpack('<i', struct.pack('<I', v))[0]
+                for v, k in zip(row, kinds)]
+    vcols = AC('vehicle_dbc'); scols = AC('vehicleseat_dbc')
+    vk = 'iiffffiiiiiiiifffffffffffffffssssfifiiii'; sk = 'iiiffffffffffiiiiiifffffffiiifffiiiiiiiffiiiiiffffffffffff'
+    seats = {s for v in vrows for s in v[6:14] if s}
+    srows = [r for r in VEH['seat'] if r[0] in seats]
+    out.write('-- Cataclysm vehicles that keep their own id (the 3.3.5 Vehicle.dbc does not have them)\n')
+    delete_in('vehicle_dbc', 'ID', {v[0] for v in vrows}); delete_in('vehicleseat_dbc', 'ID', seats)
+    emit('vehicle_dbc', vcols, [dict(zip(vcols, typed(v, vk))) for v in vrows])
+    emit('vehicleseat_dbc', scols, [dict(zip(scols, typed(r, sk))) for r in srows])
+
+# ------------------------------------------------------------------ gossip menus of the new objects (the Goblin Teleporter)
+menus = {gtpl[e].get('Data19') or gtpl[e].get('data19') or 0 for e in new_gt if gtpl[e]['type'] == 10}
+menus = {m for m in menus if m}
+if menus:
+    gm = q(f"select * from gossip_menu where MenuID in ({inlist(menus)})")
+    gmo = q(f"select * from gossip_menu_option where MenuID in ({inlist(menus)})")
+    out.write('-- gossip menus of the new objects (the npc_text rows are in AzerothCore already)\n')
+    delete_in('gossip_menu', 'MenuID', menus); delete_in('gossip_menu_option', 'MenuID', menus)
+    emit('gossip_menu', AC('gossip_menu'), [dict(MenuID=r['MenuID'], TextID=r['TextID'], VerifiedBuild=0) for r in gm])
+    emit('gossip_menu_option', AC('gossip_menu_option'), [dict(MenuID=r['MenuId'], OptionID=r['OptionIndex'], OptionIcon=r['OptionIcon'],
+         OptionText=r['OptionText'], OptionBroadcastTextID=0, OptionType=r['OptionType'], OptionNpcFlag=r['OptionNpcflag'], ActionMenuID=0,
+         ActionPoiID=0, BoxCoded=0, BoxMoney=0, BoxText='', BoxBroadcastTextID=0, VerifiedBuild=0) for r in gmo])
+# ------------------------------------------------------------------ area triggers the 3.3.5 AreaTrigger.dbc doesn't have
+if AREATRIGGERS:
+    delete_in('areatrigger', 'entry', {a[0] for a in AREATRIGGERS})
+    emit('areatrigger', ['entry', 'map', 'x', 'y', 'z', 'radius', 'length', 'width', 'height', 'orientation'],
+         [dict(zip(['entry', 'map', 'x', 'y', 'z', 'radius', 'length', 'width', 'height', 'orientation'], a)) for a in AREATRIGGERS],
+         'area triggers of the Cataclysm version (boxes from the 4.3.4 AreaTrigger.dbc)')
 out.close()
 
 # ------------------------------------------------------------------ script names
@@ -354,7 +443,8 @@ for r in q(f"select entry, ScriptName from creature_template where ScriptName in
     if r['entry'] in new_ct and r['entry'] not in heroic_tpl: sn.append(f"UPDATE `creature_template` SET `ScriptName` = {lit2(r['ScriptName'])} WHERE `entry` = {r['entry']};")
 for r in q(f"select entry, ScriptName from gameobject_template where ScriptName in ({inn}) order by entry"):
     if r['entry'] in new_gt: sn.append(f"UPDATE `gameobject_template` SET `ScriptName` = {lit2(r['ScriptName'])} WHERE `entry` = {r['entry']};")
-ssn = q(f"select spell_id, ScriptName from spell_script_names where ScriptName in ({inn}) order by ScriptName, spell_id")
+ssn = [r for r in q(f"select spell_id, ScriptName from spell_script_names where ScriptName in ({inn}) order by ScriptName, spell_id")
+       if r['spell_id'] not in SPELL_MAP and r['spell_id'] not in SPELL_NONE]   # the normal spell has the same script
 if ssn:
     sn.append(f"DELETE FROM `spell_script_names` WHERE `ScriptName` IN ({','.join(sorted({lit2(r['ScriptName']) for r in ssn}))});")
     sn.append("INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES\n" + ',\n'.join(f"({r['spell_id']}, {lit2(r['ScriptName'])})" for r in ssn) + ';')
@@ -367,9 +457,9 @@ open(f'{OUTDIR}/{MODSQL}_scriptnames.sql', 'w', encoding='utf8').write('\n'.join
 # ------------------------------------------------------------------ report
 used_names = set(re.findall(r"'(\w+)'", '\n'.join(sn))) | {r['ScriptName'] for r in c_rows if r['ScriptName']} | {r['ScriptName'] for r in g_rows if r['ScriptName']}
 rep = dict(spawngroups=SGMAP, spawns=len(c_rows), objects=len(g_rows), new_ct=len(new_ct), shared=shared, new_gt=len(new_gt), texts=len(txt), smart=len(ss_rows),
-           waypoints=len(wp_rows), cond=len(cr), loot_items=len(items_needed), loot_dropped=len(dropped), ported=len(PORTED),
+           waypoints=len(wp_rows), cond=len(cr), loot_items=len(items_needed), loot_dropped=len(dropped), loot_dropped_ids=sorted(dropped), ported=len(PORTED),
            ported_unused=sorted(PORTED - used_names),
            models=sorted({m['CreatureDisplayID'] for m in model_rows}), godisplays=sorted({gtpl[e]['displayId'] for e in new_gt}),
            spells=sorted(spells_used | {s['spell_id'] for s in ssn}))
 json.dump(rep, open(f'{OUTDIR}/{KEY}.report.json', 'w'), indent=1)
-print({k: v for k, v in rep.items() if k not in ('models', 'godisplays', 'spells')})
+print({k: v for k, v in rep.items() if k not in ('models', 'godisplays', 'spells', 'loot_dropped_ids')})

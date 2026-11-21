@@ -160,5 +160,15 @@ with open(OUT, 'w', encoding='utf8') as o:
     for k in range(0, len(rows), 300):
         o.write(f"INSERT INTO `item_template` ({', '.join('`%s`' % c for c in cols)}) VALUES\n")
         o.write(',\n'.join('(' + ', '.join(lit(r[c]) for c in cols) + ')' for r in rows[k:k + 300]) + ';\n')
+    # the server's copy of the Item.dbc rows (item_dbc), so the server knows the new items without a new Item.dbc file
+    dids = sorted(r[0] for r in dbcrows)
+    if dids:
+        o.write('-- Item.dbc rows of the items the 3.3.5 Item.dbc does not have (the client gets the same rows in patch-T)\n')
+        for k in range(0, len(dids), 1000): o.write(f"DELETE FROM `item_dbc` WHERE `ID` IN ({','.join(map(str, dids[k:k + 1000]))});\n")
+        drows = sorted(dbcrows)
+        for k in range(0, len(drows), 500):
+            o.write('INSERT INTO `item_dbc` (`ID`, `ClassID`, `SubclassID`, `Sound_Override_Subclassid`, `Material`, `DisplayInfoID`, '
+                    '`InventoryType`, `SheatheType`) VALUES\n')
+            o.write(',\n'.join('(' + ', '.join(str(v if v < 2 ** 31 else v - 2 ** 32) for v in r) + ')' for r in drows[k:k + 500]) + ';\n')
 json.dump(dbcrows, open(OUTDBC, 'w'))
 json.dump(sorted(r['entry'] for r in rows), open(OUT + '.ids', 'w'))
