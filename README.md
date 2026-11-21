@@ -32,8 +32,8 @@ How the content was fitted to 3.3.5:
 - Gossip menus are not converted yet, and most boss fights need their C++ scripts (see the boss modules).
 
 `tools/convert.py` and `tools/items.py` rebuild these files from the source databases.
-`tools/heroic_convert.py` makes the SQL of [mod-temucraft-deadmines](https://github.com/Temucraft/mod-temucraft-deadmines)
-and [mod-temucraft-shadowfang-keep](https://github.com/Temucraft/mod-temucraft-shadowfang-keep) (the Cataclysm
+`tools/heroic_convert.py` makes the SQL of the Deadmines and Shadowfang Keep heroics in
+[mod-temucraft-instances](https://github.com/Temucraft/mod-temucraft-instances) (the Cataclysm
 versions of those dungeons as their heroic modes, GUIDs 7300000-7399999).
 
 The SQL runs through the normal database updater on the next worldserver start.

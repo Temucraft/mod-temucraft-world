@@ -18,11 +18,11 @@ from pymysql.converters import escape_string
 KEY, OUTDIR = sys.argv[1], sys.argv[2]
 CFG = {
     'dm': dict(map=36, guid=7300000, imm=73000, mod='mod-temucraft-deadmines', name='The Deadmines',
-               src=os.path.join(MODULES, 'mod-temucraft-deadmines', 'src'), instance='instance_deadmines', sg=7300,
+               src=os.path.join(MODULES, 'mod-temucraft-instances', 'src', 'deadmines'), instance='instance_deadmines', sg=7300,
                # entrance quest givers of each faction (their Cataclysm quests don't exist here, and both factions would see both)
                exclude={46612, 46613, 46614, 50595, 491, 46889, 46890, 46902, 46903, 46906, 24935}),
     'sfk': dict(map=33, guid=7350000, imm=73500, mod='mod-temucraft-shadowfang-keep', name='Shadowfang Keep',
-                src=os.path.join(MODULES, 'mod-temucraft-shadowfang-keep', 'src'), instance='instance_shadowfang_keep', sg=7350),
+                src=os.path.join(MODULES, 'mod-temucraft-instances', 'src', 'shadowfang_keep'), instance='instance_shadowfang_keep', sg=7350),
 }[KEY]
 # Cataclysm model ids that neither AzerothCore's nor Temucraft's CreatureDisplayInfo.dbc has: the closest 3.3.5 look
 DISPLAY_FIX = {30184: 37710, 30185: 38641, 30186: 38642, 30187: 38811,     # mining monkeys -> Creature\Monkey
