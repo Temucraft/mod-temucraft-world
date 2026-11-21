@@ -18,6 +18,13 @@ World data for the maps salvaged from the Crazy repack and WoW Forever client fi
 - `temucraft_world_msv.sql`: only removes the Mogu'shan Vaults spawns an earlier version added (GUIDs 72xxxxx).
 - `temucraft_world_items.sql`: the items those instances drop (also the Deadmines and Shadowfang Keep heroic boss loot),
   with their `item_dbc` rows so the server knows the items the 3.3.5 Item.dbc doesn't have.
+- `temucraft_world_pandaria_bosses.sql`: the Pandaria world bosses on map 870: the Sha of Anger (one of four spawn
+  points in Kun-Lai Summit, pool 76000), Galleon (Valley of the Four Winds) and Oondasta (Isle of Giants), with the
+  creatures they summon. Spawns from LegionCore, templates from SkyFire 5.4.8, GUIDs 7600000-7699999. Their scripts
+  are in `src/TemucraftPandariaWorldBosses.cpp` (ported from LegionCore 7.3.5, GNU GPL v2). Made by
+  `tools/convert.py pwb`. Nalak (Isle of Thunder, map 1064, no client terrain) and Ordos (no script) are not in.
+  Battle on the High Seas (1099) is still not done: the server has its terrain, but none of the source databases has
+  its spawns (TDB 434: none, SkyFire 548: one, LegionCore: none) and LegionCore has no script for it.
 - `temucraft_world_mists_displays.sql`: 5 model ids and 3 object displays the Mists rows use that the DBCs don't have
   (31379, 31460, 60569, 60570, 61807 / 9542, 9371, 26705) get the closest 3.3.5 look: the invisible trigger model for
   the script stalkers, a crypt scarab for The Golden Beetle, the Thunder Bluff elevator car for the Orgrimmar

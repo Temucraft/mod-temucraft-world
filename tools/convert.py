@@ -6,7 +6,11 @@ Only creatures, gameobjects and items that AzerothCore doesn't already have are 
 reserved range. Levels are moved down to the 3.3.5 range (Cata -5, Mists -10) and the health/damage/armor
 modifiers are kept, so they scale from AzerothCore's own level stats.
 
-usage: convert.py 434|548 OUT.sql"""
+usage: convert.py 434|548|lc|msv|pwb OUT.sql
+
+pwb (Pandaria world bosses) reads a scratch database `pwb`: views onto every sf548 table except creature, gameobject
+and creature_addon; creature_text as a view onto legioncore_world.creature_text; an empty areatrigger_teleport view;
+and a creature table (lcx's layout) holding the LegionCore spawns of 60491, 62346 and 69161 on map 870."""
 import sys, os, json, collections, pymysql
 from pymysql.converters import escape_string
 
@@ -21,9 +25,12 @@ CFG = {
                names={960: 'Temple of the Jade Serpent', 1008: "Mogu'shan Vaults", 1136: 'Siege of Orgrimmar', 1048: 'Unga Ingoo'}),
     'msv': dict(db='sf548', maps=(1008,), guid=7200000, imm=72000, lvl=10, spawns='crz_',
                 names={1008: "Mogu'shan Vaults"}),
+    # Pandaria world bosses on the Pandaria continent: only these spawns (LegionCore positions), SkyFire templates
+    'pwb': dict(db='pwb', maps=(870,), guid=7600000, imm=76000, lvl=10,
+                names={870: 'Pandaria world bosses (Sha of Anger, Galleon, Oondasta)'}),
 }[SRC]
 SP = CFG.get('spawns', '')      # Mogu'shan Vaults: spawns from the Crazy repack, templates from SkyFire
-MOP = SRC in ('548', 'msv', 'lc')
+MOP = SRC in ('548', 'msv', 'lc', 'pwb')
 con = pymysql.connect(unix_socket='/home/claude/mdb/s.sock', user='root', db=CFG['db'], charset='utf8mb4',
                       cursorclass=pymysql.cursors.DictCursor)
 def q(sql, *a):
@@ -82,6 +89,7 @@ def spawnmask(m):
     m = m or 1
     if SRC == '434': return m & 0xFF
     if SRC == 'msv': return 15
+    if SRC == 'pwb': return 1
     out = 0
     diff = dict(MOP_DIFF)
     if SRC == 'lc': diff.update({14: 0, 15: 2})           # LegionCore: flexible normal / heroic raid
@@ -123,7 +131,12 @@ if SRC == '434' and os.path.exists('/mnt/user-data/uploads/Ryans World of Warcra
     for v in json.load(open('/mnt/user-data/uploads/Ryans World of Warcraft/Claude scratch/names.json')).values(): names |= set(v['names'])
     want |= ids(f"select entry from creature_template where entry in ({','.join(map(str, EXTRA['npc'])) or 0})")
     if names: want |= ids("select entry from creature_template where ScriptName in (" + ','.join("'%s'" % n for n in names) + ")")
-if MOP and os.path.exists('/home/claude/db/entries548.json'):
+if SRC == 'pwb':
+    # the world boss scripts (src/TemucraftPandariaWorldBosses.cpp) and the creatures they summon (Ire, Bitter
+    # Thoughts, the Salyin Warmongers)
+    PORTED |= {'boss_sha_of_anger', 'npc_bitter_thoughths', 'npc_ire', 'boss_galion', 'npc_galion', 'boss_oondasta'}
+    want |= ids("select entry from creature_template where entry in (60579, 61523, 62351, 62352)")
+elif MOP and os.path.exists('/home/claude/db/entries548.json'):
     EX = json.load(open('/home/claude/db/entries548.json'))
     EXTRA = EX[SRC] if SRC in EX else dict(npc=EX['548']['npc'] + EX['msv']['npc'], go=EX['548']['go'] + EX['msv']['go'])
     want |= ids(f"select entry from creature_template where entry in ({','.join(map(str, EXTRA['npc'])) or 0})")
@@ -179,6 +192,11 @@ for e in sorted(new_ct):
              detection_range=t.get('detection_range') or 20, CreatureImmunitiesId=immunity(mech, school),
              ScriptName=t['ScriptName'] if t.get('ScriptName') in PORTED else '', VerifiedBuild=0, subname=t['subname'] or '', IconName=t['IconName'] or '',
              gossip_menu_id=0, AIName=t['AIName'] or '')
+    if SRC == 'pwb':
+        r.update(VehicleId=0)     # the Galleon's Mists vehicle (2232) isn't in the 3.3.5 Vehicle.dbc
+        # some SkyFire names are French: the English name from LegionCore's creature cache
+        en = q("select Name1 from legioncore_world.creature_template_wdb where Entry=%s", e)
+        if en and en[0]['Name1']: r.update(name=en[0]['Name1'])
     ct_rows.append(r)
     for i in range(4):
         m = t[f'modelid{i + 1}']
@@ -242,6 +260,13 @@ for r in cre:
                        ScriptName=r['ScriptName'] if r.get('ScriptName') in PORTED else '', VerifiedBuild=0,
                        CreateObject=0, Comment=None))
 emit('creature', AC('creature'), c_rows, 'creature spawns')
+if SRC == 'pwb':
+    # the Sha of Anger has four spawn points in Kun-Lai Summit: one of them is up at a time
+    sha = [r['guid'] for r in c_rows if r['id'] == 60491]
+    out.write(f"DELETE FROM `pool_creature` WHERE `pool_entry` = {CFG['imm']};\nDELETE FROM `pool_template` WHERE `entry` = {CFG['imm']};\n")
+    out.write(f"INSERT INTO `pool_template` (`entry`, `max_limit`, `description`) VALUES ({CFG['imm']}, 1, 'Sha of Anger (Kun-Lai Summit)');\n")
+    out.write("INSERT INTO `pool_creature` (`guid`, `pool_entry`, `chance`, `description`) VALUES\n" +
+              ',\n'.join(f"({g}, {CFG['imm']}, 0, 'Sha of Anger')" for g in sha) + ';\n\n')
 stats['creature spawns'] = len(c_rows)
 cad = q(f"select * from {SP}creature_addon where guid in ({','.join(map(str, guidmap)) or 0})")
 emit('creature_addon', AC('creature_addon'), [dict(r, guid=guidmap[r['guid']], path_id=newpath(r[pk], guidmap[r['guid']]),
@@ -267,7 +292,8 @@ if has('creature_formations'):
 
 # ---------------------------------------------------------------- gameobjects
 gwant = {r['id'] for r in gob} | (ids(f"select entry from gameobject_template where entry in ({','.join(map(str, EXTRA.get('go', []))) or 0})") if EXTRA else set())
-gtpl = {t['entry']: t for t in q(f"select * from gameobject_template where entry in ({','.join(map(str, gwant)) or 0})")}
+gwant.discard(0)
+gtpl = {t['entry']: t for t in q(f"select * from gameobject_template where entry in ({','.join(map(str, gwant))})")} if gwant else {}
 new_gt = {e for e in gtpl if e not in AC_GT}
 stats['gameobject templates'] = (len(new_gt), len(gtpl) - len(new_gt))
 delete_in('gameobject_template', 'entry', new_gt); delete_in('gameobject_template_addon', 'entry', new_gt)
