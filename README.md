@@ -56,6 +56,22 @@ The SQL runs through the normal database updater on the next worldserver start.
   and Forever's version of the continent tiles Open Azeroth left unchanged.
 - Server `Data/dbc`: same rows (backup in `Data/dbc.backup-before-forever-crazy`).
 
+### Fixes made in the release patch-V (keep them when patch-V is built again)
+
+patch-V is not built from this module: the release file was edited in place. `tools/forever_fixes.py` holds the
+lists and writes the files again for a new patch-V (see the top of the script):
+- Tiles taken out (Open Azeroth's are used): Kalimdor 40_23, 40_24, 38_27, 39_26, 34_36, 28_11 (seams, 2026-11-21)
+  and 32_34, 32_35, 32_37, 33_37 (Mulgore shading lines, 2026-11-24). Forever tiles that must stay in: Azeroth 44_28,
+  33_35, Kalimdor 39_20.
+- Stock buildings back under Forever's names (2026-11-24): Forever placed its own copies, converted from a later
+  client with broken inside/outside group flags, exactly where these stock buildings stand: Goldshire inn, Booty Bay
+  and its fortress, Stormwind, Ironforge, Orgrimmar, Caverns of Time, the Hillsbrad guild house, the Duskwood tree,
+  Nordrassil, the Winterspring goblin observatory and the Teldrassil dock. Each now holds the stock root and groups
+  (Open Azeroth's version where it has one).
+- Dalaran (map 2959): 123 invisible `collision_rectangle.m2` blockers shrunk to scale 1/1024.
+
+Server: re-extract vmaps for maps 0 and 1 (the buildings) and 2959.
+
 ## Forever maps: .tele points
 
 `temucraft_world_forever_tele.sql` (made by `tools/forever_tele.py`) adds a `.tele` point on each of the 27 new
