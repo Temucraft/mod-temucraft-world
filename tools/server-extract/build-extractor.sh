@@ -29,5 +29,9 @@ assert old in s, "map_extractor changed: tell Claude"
 open(p, "w").write(s.replace(old, old + add, 1))
 PY
 cmake --build "$BUILD" --target map_extractor -j"$(nproc)"
-cp "$BUILD/bin/map_extractor" "$BUILD/bin/map_extractor-all-patches"
+# the binary is in bin/ or, in some build layouts, src/tools/map_extractor/
+for f in "$BUILD/bin/map_extractor" "$BUILD/src/tools/map_extractor/map_extractor" "$BUILD/src/tools/map_extractor"; do
+    if [ -f "$f" ] && [ -x "$f" ]; then mkdir -p "$BUILD/bin"; cp "$f" "$BUILD/bin/map_extractor-all-patches"; break; fi
+done
+[ -x "$BUILD/bin/map_extractor-all-patches" ] || { echo "map_extractor not found under $BUILD"; exit 1; }
 echo "Built $BUILD/bin/map_extractor-all-patches"
