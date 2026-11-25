@@ -3,6 +3,7 @@
 # The launcher files are laid out for download (base/, patches/, locales/<locale>/); the extractors want a client
 # (Data/, Data/enUS/). The extractors only open numbered patches, so the letter patches get numbers here, in the
 # order the client loads them: patch-4 ... patch-8 keep their numbers, then patch-A = patch-9, patch-B = patch-10 ...
+# (all one higher, from Data/patch-2, when there is a patches/patch-1.MPQ: see below)
 #
 # usage: sh make-client-tree.sh [launcher files folder] [tree folder]
 #        defaults: /var/www/wow-files  /srv/wow-client
@@ -21,11 +22,23 @@ mkdir -p "$TREE/Data/enUS"
 LIST="$TREE/patch-numbers.txt"
 : > "$LIST"
 
-for f in "$FILES"/base/Data/*.MPQ; do ln -s "$f" "$TREE/Data/$(basename "$f")"; done
+# The client loads patches/patch-1.MPQ (when there is one) under the base patch-2 and patch-3, and those under every
+# other patch. So with a patch-1 the base patch-2 and patch-3 move up one place (Data/patch-3, patch-4) and patch-1
+# takes Data/patch-2; the other patches follow. Without a patch-1 nothing moves.
 n=4
-for f in $(ls "$FILES"/patches/patch-*.MPQ | LC_ALL=C sort); do
+FIRST=""
+if [ -f "$FILES/patches/patch-1.MPQ" ]; then
+    FIRST="$FILES/patches/patch-1.MPQ $FILES/base/Data/patch-2.MPQ $FILES/base/Data/patch-3.MPQ"
+    n=2
+fi
+for f in "$FILES"/base/Data/*.MPQ; do
+    b=$(basename "$f")
+    [ -n "$FIRST" ] && { [ "$b" = patch-2.MPQ ] || [ "$b" = patch-3.MPQ ]; } && continue
+    ln -s "$f" "$TREE/Data/$b"
+done
+for f in $FIRST $(ls "$FILES"/patches/patch-*.MPQ | LC_ALL=C sort | grep -v -x -F "$FILES/patches/patch-1.MPQ"); do
     ln -s "$f" "$TREE/Data/patch-$n.MPQ"
-    echo "Data/patch-$n.MPQ = patches/$(basename "$f")" >> "$LIST"
+    echo "Data/patch-$n.MPQ = ${f#$FILES/}" >> "$LIST"
     n=$((n + 1))
 done
 
