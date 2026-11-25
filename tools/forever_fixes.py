@@ -31,6 +31,10 @@ TILES_OUT = [
     # 2026-11-24 Mulgore shading lines
     'World\\Maps\\Kalimdor\\Kalimdor_32_34.adt', 'World\\Maps\\Kalimdor\\Kalimdor_32_35.adt',
     'World\\Maps\\Kalimdor\\Kalimdor_32_37.adt', 'World\\Maps\\Kalimdor\\Kalimdor_33_37.adt',
+    # 2026-11-25 stock places back (Ratchet inn, Camp Taurajo, Grom'gol zeppelin tower, Southshore blacksmith and dock)
+    'World\\Maps\\Kalimdor\\Kalimdor_39_33.adt', 'World\\Maps\\Kalimdor\\Kalimdor_39_34.adt',
+    'World\\Maps\\Kalimdor\\Kalimdor_38_38.adt', 'World\\Maps\\Azeroth\\Azeroth_31_55.adt',
+    'World\\Maps\\Azeroth\\Azeroth_32_33.adt',
 ]
 # Forever tiles that must be IN patch-V (2026-11-21 seams, Forever's own version of the Open Azeroth neighbour):
 # Azeroth 44_28, Azeroth 33_35, Kalimdor 39_20. Take them from the Forever data if the new build left them out.
